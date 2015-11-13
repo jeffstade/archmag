@@ -4,6 +4,7 @@ import time
 from dateutil import parser
 from datetime import date, timedelta
 import operator
+from operator import truediv
 
 
 def convert_to_datetime(timestampString):
@@ -61,6 +62,7 @@ with open('articles.csv', 'rb') as f:
     		for tag in stringarray_to_array(row[categorymapping[category]]):
     			tag = tag.replace("\n","").strip()
     			tagsTimeseries[category] = populateTimeSeriesDictionary(tagsTimeseries[category], tag, timestamp.year, timestamp.month)
+    			tagsTimeseries[category] = populateTimeSeriesDictionary(tagsTimeseries[category], "Summary-Total", timestamp.year, timestamp.month)
 
     			tagsTimeseriesYearly[category] = populateTimeSeriesDictionary(tagsTimeseriesYearly[category], tag, timestamp.year)
     			tagsTimeseriesYearly[category] = populateTimeSeriesDictionary(tagsTimeseriesYearly[category], "Summary-Total", timestamp.year)
@@ -77,3 +79,20 @@ def printMostPopularTags(d):
 	    print w, d[w]
 
 printMostPopularTags(tagsCount['Tags_Subjects'])
+
+f = open("webreadydata2.csv", "wb")
+output = csv.writer(f)
+for key in tagsTimeseriesYearly.keys():
+	totals = tagsTimeseriesYearly[key]["Summary-Total"].values()
+	for k in tagsTimeseriesYearly[key].keys():
+		if (k != "[]" && k != "Summary-Total"):
+			overtime = tagsTimeseriesYearly[key][k].values()
+			percentage = map(operator.truediv, overtime, totals)
+			countString = str(overtime)[1:-1]
+			formattedPercentage = [ '%.4f' % elem for elem in percentage ]
+			formattedPercentage = [ float(elem) for elem in formattedPercentage ]
+			percentageString = str(formattedPercentage)[1:-1] 
+			totalCount = sum(overtime)
+			if totalCount > 2:
+				data = ["'" + k + "'", "'" + key + "'", countString,percentageString,totalCount]
+				output.writerow([unicode(s).encode("utf-8") for s in data])
